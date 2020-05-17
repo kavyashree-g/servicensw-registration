@@ -1,12 +1,16 @@
 package com.nsw.registration.v1.service;
 
 import com.nsw.registration.v1.entity.*;
+import com.nsw.registration.v1.exception.ResourceNotFoundException;
 import com.nsw.registration.v1.model.*;
 import com.nsw.registration.v1.repository.RegistrationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,41 +21,45 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Autowired
     private RegistrationRepository registrationRepository;
 
-    public UserRegistrationDetailsDTO getRegistrationsByUserId(Long userId) {
-        UserRegistrationDetails userRegistrationDetails = registrationRepository.getOne(userId);
-        log.info("User Registration Details : ", userRegistrationDetails);
-
-        UserRegistrationDetailsDTO userRegistrationDetailsDTO = new UserRegistrationDetailsDTO();
-        userRegistrationDetailsDTO.setUserId(userRegistrationDetails.getUserId());
-        List<RegistrationDetailsDTO> registrationDetailsDTOList = new ArrayList<>();
-
-        for (RegistrationDetails registrationDetails :userRegistrationDetails.getRegistrationDetails()){
-            RegistrationDetailsDTO registrationDetailsDTO = new RegistrationDetailsDTO();
-            registrationDetailsDTO.setPlate_number(registrationDetails.getPlate_number());
-
-            InsurerDTO insurerDTO = new InsurerDTO();
-            insurerDTO.setCode(registrationDetails.getInsurer().getCode());
-            insurerDTO.setName(registrationDetails.getInsurer().getName());
-            registrationDetailsDTO.setInsurer(insurerDTO);
-
-            RegistrationDTO registrationDTO = new RegistrationDTO();
-            registrationDTO.setExpired(registrationDetails.getRegistration().isExpired());
-            registrationDTO.setExpiry_date(registrationDetails.getRegistration().getExpiry_date());
-            registrationDetailsDTO.setRegistration(registrationDTO);
-
-            VehicleDTO vehicleDTO = new VehicleDTO();
-            vehicleDTO.setColour(registrationDetails.getVehicle().getColour());
-            vehicleDTO.setMake(registrationDetails.getVehicle().getMake());
-            vehicleDTO.setModel(registrationDetails.getVehicle().getModel());
-            vehicleDTO.setGross_mass(registrationDetails.getVehicle().getGross_mass());
-            vehicleDTO.setTare_weight(registrationDetails.getVehicle().getTare_weight());
-            vehicleDTO.setType(registrationDetails.getVehicle().getType());
-            vehicleDTO.setVin(registrationDetails.getVehicle().getVin());
-            registrationDetailsDTO.setVehicle(vehicleDTO);
-
-            registrationDetailsDTOList.add(registrationDetailsDTO);
+    public UserRegistrationDetailsDTO getRegistrationsByUserId(Long userId) throws ResourceNotFoundException {
+        UserRegistrationDetails userRegistrationDetails= null;
+        try {
+            userRegistrationDetails = registrationRepository.getOne(userId);
         }
-        userRegistrationDetailsDTO.setRegistrationDetails(registrationDetailsDTOList);
+        catch (HttpServerErrorException | HttpClientErrorException | EntityNotFoundException ex){
+            throw new ResourceNotFoundException(ex.getMessage());
+        }
+        UserRegistrationDetailsDTO userRegistrationDetailsDTO = new UserRegistrationDetailsDTO();
+            userRegistrationDetailsDTO.setUserId(userRegistrationDetails.getUserId());
+            List<RegistrationDetailsDTO> registrationDetailsDTOList = new ArrayList<>();
+
+            for (RegistrationDetails registrationDetails : userRegistrationDetails.getRegistrationDetails()) {
+                RegistrationDetailsDTO registrationDetailsDTO = new RegistrationDetailsDTO();
+                registrationDetailsDTO.setPlate_number(registrationDetails.getPlate_number());
+
+                InsurerDTO insurerDTO = new InsurerDTO();
+                insurerDTO.setCode(registrationDetails.getInsurer().getCode());
+                insurerDTO.setName(registrationDetails.getInsurer().getName());
+                registrationDetailsDTO.setInsurer(insurerDTO);
+
+                RegistrationDTO registrationDTO = new RegistrationDTO();
+                registrationDTO.setExpired(registrationDetails.getRegistration().isExpired());
+                registrationDTO.setExpiry_date(registrationDetails.getRegistration().getExpiry_date());
+                registrationDetailsDTO.setRegistration(registrationDTO);
+
+                VehicleDTO vehicleDTO = new VehicleDTO();
+                vehicleDTO.setColour(registrationDetails.getVehicle().getColour());
+                vehicleDTO.setMake(registrationDetails.getVehicle().getMake());
+                vehicleDTO.setModel(registrationDetails.getVehicle().getModel());
+                vehicleDTO.setGross_mass(registrationDetails.getVehicle().getGross_mass());
+                vehicleDTO.setTare_weight(registrationDetails.getVehicle().getTare_weight());
+                vehicleDTO.setType(registrationDetails.getVehicle().getType());
+                vehicleDTO.setVin(registrationDetails.getVehicle().getVin());
+                registrationDetailsDTO.setVehicle(vehicleDTO);
+
+                registrationDetailsDTOList.add(registrationDetailsDTO);
+            }
+            userRegistrationDetailsDTO.setRegistrationDetails(registrationDetailsDTOList);
         return userRegistrationDetailsDTO;
     }
 

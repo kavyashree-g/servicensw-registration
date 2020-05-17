@@ -1,5 +1,6 @@
 package com.nsw.registration.v1.controller;
 
+import com.nsw.registration.v1.exception.ResourceNotFoundException;
 import com.nsw.registration.v1.model.UserRegistrationDetailsDTO;
 import com.nsw.registration.v1.service.RegistrationService;
 import org.junit.jupiter.api.Test;
@@ -27,21 +28,15 @@ public class RegistrationControllerTest {
     private RegistrationController registrationControllerMock;
 
     @Test
-    public void getRegistrationsByUserIdTest() {
+    public void getRegistrationsByUserIdTest() throws ResourceNotFoundException {
         Mockito.when(registrationServiceMock.getRegistrationsByUserId(Mockito.anyLong())).thenReturn(userRegistrationDetailsDTOMock);
         ResponseEntity<UserRegistrationDetailsDTO> response = registrationControllerMock.getRegistrationsByUserId(Mockito.anyLong());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    public void getRegistrationsByUserIdExceptionTest() {
-        Mockito.when(registrationServiceMock.getRegistrationsByUserId(Mockito.anyLong())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThrows(HttpServerErrorException.class, () -> registrationControllerMock.getRegistrationsByUserId(Mockito.anyLong()));
-    }
-
-    @Test
     public void createUserRegistrationDetailsTest() {
-        Mockito.when(registrationServiceMock.createUserRegistrationDetails(userRegistrationDetailsDTOMock)).thenReturn(new Long(10001L));
+        Mockito.when(registrationServiceMock.createUserRegistrationDetails(userRegistrationDetailsDTOMock)).thenReturn(10001L);
         ResponseEntity<Long> response = registrationControllerMock.createUserRegistrationDetails(userRegistrationDetailsDTOMock);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
@@ -51,6 +46,5 @@ public class RegistrationControllerTest {
         Mockito.when(registrationServiceMock.createUserRegistrationDetails(userRegistrationDetailsDTOMock)).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThrows(HttpServerErrorException.class, () -> registrationControllerMock.createUserRegistrationDetails(userRegistrationDetailsDTOMock));
     }
-
 
 }

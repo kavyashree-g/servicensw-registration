@@ -1,10 +1,12 @@
 package com.nsw.registration.v1.service;
 
 import com.nsw.registration.v1.entity.*;
+import com.nsw.registration.v1.exception.ResourceNotFoundException;
 import com.nsw.registration.v1.model.*;
 import com.nsw.registration.v1.repository.RegistrationRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -23,17 +25,22 @@ public class RegistrationServiceImplTest {
     private RegistrationServiceImpl registrationService;
 
     @Test
-    public void getRegistrationsByUserIdTest(){
+    public void getRegistrationsByUserIdTest() throws ResourceNotFoundException {
 
         UserRegistrationDetails userRegistrationDetails = generateUserRegistrationDetails();
         Mockito.when(registrationRepositoryMock.getOne(Mockito.anyLong())).thenReturn(userRegistrationDetails);
         UserRegistrationDetailsDTO userRegistrationDetailsDTO = registrationService.getRegistrationsByUserId(Mockito.anyLong());
+        Assertions.assertEquals(10001L,userRegistrationDetailsDTO.getUserId());
         Assertions.assertEquals("EBF28E",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getPlate_number());
         Assertions.assertEquals("green",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getVehicle().getColour());
         Assertions.assertEquals("Allianz",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getInsurer().getName());
         Assertions.assertEquals(false,userRegistrationDetailsDTO.getRegistrationDetails().get(0).getRegistration().isExpired());
     }
 
+    public void getRegistrationsByUserIdExceptionTest() throws ResourceNotFoundException {
+        Assertions.assertThrows(ResourceNotFoundException.class, (Executable) registrationService.getRegistrationsByUserId(123456L));
+
+    }
     @Test
     public void createUserRegistrationDetailsTest(){
         UserRegistrationDetails userRegistrationDetails = generateUserRegistrationDetails();
@@ -80,7 +87,7 @@ public class RegistrationServiceImplTest {
     }
     public UserRegistrationDetailsDTO generateUserRegistrationDetailsDTO(){
         UserRegistrationDetailsDTO userRegistrationDetailsDTO =new UserRegistrationDetailsDTO();
-        //userRegistrationDetailsDTO.setUserId(10001L);
+        userRegistrationDetailsDTO.setUserId(10001L);
         List<RegistrationDetailsDTO> registrationDetailsList = new ArrayList<>();
         RegistrationDetailsDTO registrationDetailsDTO = new RegistrationDetailsDTO();
         registrationDetailsDTO.setPlate_number("EBF28E");

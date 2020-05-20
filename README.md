@@ -1,5 +1,6 @@
 # Service NSW Registrations - Create and Get API.
 This is a Springboot Rest API microservice project to create and get the list of Service NSW vehicle registration Details for a given user.
+The flow of the project is that when the API is invoked, controllers hit the service class, which in turn invokes JPA repository to persist data in h2 or mysql database.
 
 Below are the two API's
 

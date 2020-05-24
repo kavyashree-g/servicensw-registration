@@ -1,8 +1,10 @@
 package com.nsw.registration.v1.service;
 
-import com.nsw.registration.v1.entity.*;
+import com.nsw.registration.v1.entity.UserRegistrationDetails;
 import com.nsw.registration.v1.exception.ResourceNotFoundException;
-import com.nsw.registration.v1.model.*;
+import com.nsw.registration.v1.mapper.RequestMapper;
+import com.nsw.registration.v1.mapper.ResponseMapper;
+import com.nsw.registration.v1.model.UserRegistrationDetailsDTO;
 import com.nsw.registration.v1.repository.RegistrationRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,109 +13,56 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 @SpringBootTest
 public class RegistrationServiceImplTest {
     @Mock
     private RegistrationRepository registrationRepositoryMock;
 
+    @Mock
+    private RequestMapper requestMapper;
+
+    @Mock
+    private ResponseMapper responseMapper;
+
+    @Mock
+    private UserRegistrationDetails userRegistrationDetails;
+
+    @Mock
+    private UserRegistrationDetailsDTO userRegistrationDetailsDTO;
+
     @InjectMocks
-    private RegistrationServiceImpl registrationService;
+    private RegistrationServiceImpl registrationServiceImpl;
 
     @Test
     public void getRegistrationsByUserIdTest() throws ResourceNotFoundException {
-
-        UserRegistrationDetails userRegistrationDetails = generateUserRegistrationDetails();
         Mockito.when(registrationRepositoryMock.getOne(Mockito.anyLong())).thenReturn(userRegistrationDetails);
-        UserRegistrationDetailsDTO userRegistrationDetailsDTO = registrationService.getRegistrationsByUserId(Mockito.anyLong());
-        Assertions.assertEquals(10001L,userRegistrationDetailsDTO.getUserId());
-        Assertions.assertEquals("EBF28E",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getPlate_number());
-        Assertions.assertEquals("green",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getVehicle().getColour());
-        Assertions.assertEquals("Allianz",userRegistrationDetailsDTO.getRegistrationDetails().get(0).getInsurer().getName());
-        Assertions.assertEquals(false,userRegistrationDetailsDTO.getRegistrationDetails().get(0).getRegistration().isExpired());
+        Mockito.when(responseMapper.userRegistrationDetailsResponseMapper(Mockito.any())).thenReturn(userRegistrationDetailsDTO);
+        UserRegistrationDetailsDTO responseDTO = registrationServiceImpl.getRegistrationsByUserId(Mockito.anyLong());
+        Assertions.assertEquals(responseDTO, userRegistrationDetailsDTO);
+    }
+
+    @Test
+    public void createUserRegistrationDetailsTest() {
+        Mockito.when(requestMapper.userRegistrationDetailsRequestMapper(Mockito.any())).thenReturn(userRegistrationDetails);
+        Mockito.when(registrationRepositoryMock.save(Mockito.any())).thenReturn(userRegistrationDetails);
+        Long userId = registrationServiceImpl.createUserRegistrationDetails(userRegistrationDetailsDTO);
+        Assertions.assertEquals(userId, userRegistrationDetails.getUserId());
     }
 
     public void getRegistrationsByUserIdExceptionTest() throws ResourceNotFoundException {
-        Assertions.assertThrows(ResourceNotFoundException.class, (Executable) registrationService.getRegistrationsByUserId(123456L));
-
-    }
-    @Test
-    public void createUserRegistrationDetailsTest(){
-        UserRegistrationDetails userRegistrationDetails = generateUserRegistrationDetails();
-        Mockito.when(registrationRepositoryMock.save(Mockito.any())).thenReturn(userRegistrationDetails);
-        UserRegistrationDetailsDTO userRegistrationDetailsDTO = generateUserRegistrationDetailsDTO();
-        Long userId = registrationService.createUserRegistrationDetails(userRegistrationDetailsDTO);
-        Assertions.assertEquals(10001L, userId);
+        Assertions.assertThrows(ResourceNotFoundException.class, (Executable) registrationServiceImpl.getRegistrationsByUserId(123456L));
     }
 
-    public UserRegistrationDetails generateUserRegistrationDetails(){
-        UserRegistrationDetails userRegistrationDetails =new UserRegistrationDetails();
-        userRegistrationDetails.setUserId(10001L);
-        List<RegistrationDetails> registrationDetailsList = new ArrayList<>();
-        RegistrationDetails registrationDetails = new RegistrationDetails();
-        registrationDetails.setPlate_number("EBF28E");
-
-        Insurer insurer = new Insurer();
-        insurer.setCode(32);
-        insurer.setName("Allianz");
-        insurer.setRegistrationDetails(registrationDetails);
-        registrationDetails.setInsurer(insurer);
-
-        Vehicle vehicle = new Vehicle();
-        vehicle.setColour("green");
-        vehicle.setMake("BMW");
-        vehicle.setModel("X4 M40i");
-        vehicle.setVin("12389347324");
-        vehicle.setType("Wagon");
-        vehicle.setTare_weight(1700);
-        vehicle.setGross_mass(1300);
-        vehicle.setRegistrationDetails(registrationDetails);
-        registrationDetails.setVehicle(vehicle);
-
-        Registration registration= new Registration();
-        registration.setExpired(false);
-        registration.setExpiry_date(OffsetDateTime.parse("2021-02-05T23:15:30.000Z"));
-        registration.setRegistrationDetails(registrationDetails);
-        registrationDetails.setRegistration(registration);
-        registrationDetails.setUserRegistrationDetails(userRegistrationDetails);
-
-        registrationDetailsList.add(registrationDetails);
-        userRegistrationDetails.setRegistrationDetails(registrationDetailsList);
-        return userRegistrationDetails;
+    public void getRegistrationsByUserIdHttpServerExceptionTest() throws ResourceNotFoundException {
+        Mockito.when(registrationRepositoryMock.getOne(Mockito.anyLong())).thenThrow(HttpServerErrorException.class);
+        Assertions.assertThrows(HttpServerErrorException.class, (Executable) registrationServiceImpl.getRegistrationsByUserId(123456L));
     }
-    public UserRegistrationDetailsDTO generateUserRegistrationDetailsDTO(){
-        UserRegistrationDetailsDTO userRegistrationDetailsDTO =new UserRegistrationDetailsDTO();
-        userRegistrationDetailsDTO.setUserId(10001L);
-        List<RegistrationDetailsDTO> registrationDetailsList = new ArrayList<>();
-        RegistrationDetailsDTO registrationDetailsDTO = new RegistrationDetailsDTO();
-        registrationDetailsDTO.setPlate_number("EBF28E");
 
-        InsurerDTO insurer = new InsurerDTO();
-        insurer.setCode(32);
-        insurer.setName("Allianz");
-        registrationDetailsDTO.setInsurer(insurer);
-
-        VehicleDTO vehicle = new VehicleDTO();
-        vehicle.setColour("green");
-        vehicle.setMake("BMW");
-        vehicle.setModel("X4 M40i");
-        vehicle.setVin("12389347324");
-        vehicle.setType("Wagon");
-        vehicle.setTare_weight(1700);
-        vehicle.setGross_mass(1300);
-        registrationDetailsDTO.setVehicle(vehicle);
-
-        RegistrationDTO registration= new RegistrationDTO();
-        registration.setExpired(false);
-        registration.setExpiry_date(OffsetDateTime.parse("2021-02-05T23:15:30.000Z"));
-        registrationDetailsDTO.setRegistration(registration);
-
-        registrationDetailsList.add(registrationDetailsDTO);
-        userRegistrationDetailsDTO.setRegistrationDetails(registrationDetailsList);
-        return userRegistrationDetailsDTO;
+    public void getRegistrationsByUserIdHttpClientExceptionTest() throws ResourceNotFoundException {
+        Mockito.when(registrationRepositoryMock.getOne(Mockito.anyLong())).thenThrow(HttpClientErrorException.class);
+        Assertions.assertThrows(HttpClientErrorException.class, (Executable) registrationServiceImpl.getRegistrationsByUserId(123456L));
     }
 }
